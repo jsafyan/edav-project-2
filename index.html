@@ -52,7 +52,7 @@ var lls = [[54.986800000000002, -2.7748599999999999, 1449273600000000000, 145203
 
 let ll_len = lls.length
 var start = new Date(lls[ll_len - 1][2] / 1000000);
-var end = new Date(lls[0][2] / 1000000);
+var end = new Date(lls[0][3] / 1000000);
 let i = 0;
 var max_sqkm = 0
 
@@ -74,21 +74,29 @@ info.onAdd = function(map) {
 // method that we will use to update the control based on feature properties passed
 info.update = function(date) {
 	if (date) {
-		let day = date.getDate();
-	let month = date.getMonth()
-	let year = date.getFullYear();
-	let monthNames = ["January", "February", "March", "April", "May", "June", "July",
-	"August", "September", "October", "November", "December"];
-	let html = '<h3>' + monthNames[month] + "-" + day + "-" + year + '</h3>'
-	this._div.innerHTML = "<div style='width:" + 170+ "px;height:" + 25 + "px;overflow:hidden;display:block;padding:0;border:0;margin:0'>" + html + "</div>";
+	  let day = date.getDate();
+	  let month = date.getMonth()
+	  let year = date.getFullYear();
+	  let monthNames = ["January", "February", "March", "April",
+    "May", "June", "July", "August", "September", "October", "November", "December"];
+	  let html = '<h3>' + monthNames[month] + "-" + day + "-" + year + '</h3>'
+	  this._div.innerHTML = "<div style='width:" + 170+ "px;height:" + 25 + "px;overflow:hidden;display:block;padding:0;border:0;margin:0'>" + html + "</div>";
 	}
 };
 
 info.addTo(map);
 
+var iteration = lls.length - 1;
+
 function animation_loop() {
 	info.update(start)
-    plotMarkers(start);
+    plotMarkers(start, iteration);
+    iteration = iteration - 1;
+    let day = start.getDate();
+    let month = start.getMonth();
+    let year = start.getFullYear();
+    let date_name = ".id-" + month + "-" + day + "-" + year;
+    expireMarkers(date_name);
     setTimeout(function() {
     	let newDate = start.setDate(start.getDate() + 1);
     	start = new Date(newDate);
@@ -99,26 +107,37 @@ function animation_loop() {
 };
 animation_loop();
 
-function plotMarkers(startDate) {
+function dayDiff(first, second) {
+    return Math.round((second-first)/(1000*60*60*24));
+}
+
+function plotMarkers(startDate, iteration) {
   let startD = startDate.getDate();
   let startMonth = startDate.getMonth();
   let startYear = startDate.getFullYear();
-  let date_name = ".id-" + startMonth + "-" + startD + "-" + startYear
-  console.log(date_name);
-  expireMarkers(".id-" + startMonth + "-" + startD + "-" + startYear)
-	let i = lls.length - 1
-	for (i = lls.length - 1; i > 0; i--) {
+  let date_name = ".id-" + startMonth + "-" + startD + "-" + startYear;
+  let i;
+	for (i = iteration; i > 0; i--) {
 		let llDate = new Date(lls[i][2] / 1000000)
 		let d = llDate.getDate();
 		let month = llDate.getMonth()
 		let year = llDate.getFullYear();
-		let endDate = new Date(lls[i][3]/ 1000000)
+		let endDate = new Date(lls[i][3]/ 1000000);
+    let delta = dayDiff(startDate, endDate);
+    if (delta < 0) {
+      let duration = delta * -1
+      endDate.setDate(startDate.getDate() + duration);
+    }
 		let endDay = endDate.getDate();
 		let endMonth = endDate.getMonth();
 		let endYear = endDate.getFullYear();
 		let endStamp = endMonth + "-" + endDay + "-" + endYear
-    console.log(endStamp)
+    //console.log(delta);
+    //console.log(startDate);
+    //console.log(endStamp);
+    console.log(d, startD, month, startMonth, year, startYear);
 		if ((d == startD) && (month == startMonth) && (year == startYear)) {
+      console.log("cool")
 			let className = "animated-icon id-" + endStamp;
 			const icon = L.divIcon({
 	    		iconSize: [5, 5],
@@ -159,13 +178,11 @@ function plotMarkers(startDate) {
 
 function expireMarkers(name) {
 	let icons = document.querySelectorAll(name)
-	if (icons.length > 0) {
-		let i = 0;
-		for (i = 0; i < icons.length; i++) {
-			icons[i].style.backgroundColor = 'rgba(192,192,192,0.7)'
-      icons[i].style.width = '5px';
-      icons[i].style.height = '5px';
-		}
+	let i = 0;
+	for (i = 0; i < icons.length; i++) {
+		icons[i].style.backgroundColor = 'rgba(192,192,192,0.4)'
+    icons[i].style.width = '5px';
+    icons[i].style.height = '5px';
 	}
 }
 </script>
